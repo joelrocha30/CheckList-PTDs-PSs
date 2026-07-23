@@ -1,6 +1,6 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
-import pandas as pd
+import json
+import os
 from datetime import datetime
 
 # Configuração da página
@@ -9,6 +9,9 @@ st.set_page_config(
     page_icon="⚡",
     layout="wide"
 )
+
+# Ficheiro local para armazenamento de dados
+FICHEIRO_DADOS = "dados_pt.json"
 
 # Configuração da Checklist Estrutura
 CHECKLIST_ESTRUTURA = {
@@ -51,28 +54,29 @@ CHECKLIST_ESTRUTURA = {
     ]
 }
 
-# Estabelecer ligação com o Google Sheets
-conn = st.connection("gsheets", type=GSheetsConnection)
+# Funções auxiliares para guardar/carregar dados sem usar Pandas ou bibliotecas externas
+def carregar_dados():
+    if os.path.exists(FICHEIRO_DADOS):
+        try:
+            with open(FICHEIRO_DADOS, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {"obras": [], "respostas": []}
+    return {"obras": [], "respostas": []}
 
-# Ler dados da Nuvem com tratamento de exceções
-try:
-    df_obras = conn.read(worksheet="Obras", ttl=5)
-    df_respostas = conn.read(worksheet="Respostas", ttl=5)
-except Exception:
-    df_obras = pd.DataFrame(columns=["obra_ref", "data_vistoria"])
-    df_respostas = pd.DataFrame(columns=["obra_ref", "item_id", "estado", "data_verificacao", "observacoes"])
+def guardar_dados(dados):
+    with open(FICHEIRO_DADOS, "w", encoding="utf-8") as f:
+        json.dump(dados, f, ensure_ascii=False, indent=4)
 
-# Garantir tipos de dados corretos
-if not df_respostas.empty:
-    df_respostas["item_id"] = df_respostas["item_id"].astype(str)
+# Inicializar Estado da Sessão
+if "base_dados" not in st.session_state:
+    st.session_state.base_dados = carregar_dados()
 
-# Estados de navegação
 if "obra_selecionada" not in st.session_state:
     st.session_state.obra_selecionada = None
 
 # Interface - Barra Lateral
 st.sidebar.title("⚡ Rede de Fiscalização")
-st.sidebar.markdown("**Fiscal:** Joel Machado Rocha")
 
 if st.session_state.obra_selecionada:
     if st.sidebar.button("⬅️ Voltar ao Dashboard", use_container_width=True):
@@ -82,7 +86,7 @@ if st.session_state.obra_selecionada:
 # --- ECRÃ 1: DASHBOARD ---
 if st.session_state.obra_selecionada is None:
     st.title("📂 Central de Fiscalizações de PTs")
-    st.subheader("Base de dados na nuvem partilhada em tempo real")
+    st.subheader("Gestão local e em tempo real")
     st.markdown("---")
     
     # Criar Nova Obra
@@ -91,48 +95,54 @@ if st.session_state.obra_selecionada is None:
         nova_ref = col_n1.text_input("Referência / Localização do PT", placeholder="Ex: PT FLG 0266")
         nova_data = col_n2.date_input("Data de Vistoria", value=datetime.now().date())
         
-        if st.button("Publicar Novo PT na Nuvem", type="primary"):
-            if nova_ref.strip() == "":
+        if st.button("Registar Novo PT", type="primary"):
+            nova_ref_clean = nova_ref.strip()
+            obras_existentes = [o["obra_ref"] for o in st.session_state.base_dados["obras"]]
+            
+            if nova_ref_clean == "":
                 st.error("Insira uma referência válida.")
-            elif not df_obras.empty and nova_ref in df_obras["obra_ref"].values:
+            elif nova_ref_clean in obras_existentes:
                 st.error("Esse PT já se encontra registado.")
             else:
-                nova_linha_obra = pd.DataFrame([{"obra_ref": nova_ref, "data_vistoria": str(nova_data)}])
-                df_obras = pd.concat([df_obras, nova_linha_obra], ignore_index=True)
+                # Registar Obra
+                st.session_state.base_dados["obras"].append({
+                    "obra_ref": nova_ref_clean,
+                    "data_vistoria": str(nova_data)
+                })
                 
-                novas_linhas_resp = []
+                # Registar Respostas Padrão
                 for cat, itens in CHECKLIST_ESTRUTURA.items():
                     for item in itens:
-                        novas_linhas_resp.append({
-                            "obra_ref": nova_ref,
+                        st.session_state.base_dados["respostas"].append({
+                            "obra_ref": nova_ref_clean,
                             "item_id": str(item["id"]),
                             "estado": "Pendente",
                             "data_verificacao": str(nova_data),
                             "observacoes": ""
                         })
-                df_respostas = pd.concat([df_respostas, pd.DataFrame(novas_linhas_resp)], ignore_index=True)
                 
-                conn.update(worksheet="Obras", data=df_obras)
-                conn.update(worksheet="Respostas", data=df_respostas)
-                st.success("PT adicionado com sucesso à nuvem!")
+                guardar_dados(st.session_state.base_dados)
+                st.success("PT adicionado com sucesso!")
                 st.rerun()
 
     # Listar Obras
     st.markdown("### 🏢 Postos de Transformação em Curso")
-    if df_obras.empty:
+    obras = st.session_state.base_dados["obras"]
+    
+    if not obras:
         st.info("Nenhum PT registado no sistema de momento.")
     else:
-        for _, row in df_obras.iterrows():
-            ref = str(row["obra_ref"])
+        for row in obras:
+            ref = row["obra_ref"]
             dt = row["data_vistoria"]
             
-            df_pt_resp = df_respostas[df_respostas["obra_ref"] == ref] if not df_respostas.empty else pd.DataFrame()
-            conf = len(df_pt_resp[df_pt_resp["estado"] == "Conforme"]) if not df_pt_resp.empty else 0
-            n_conf = len(df_pt_resp[df_pt_resp["estado"] == "Não Conforme"]) if not df_pt_resp.empty else 0
-            na_it = len(df_pt_resp[df_pt_resp["estado"] == "N/A"]) if not df_pt_resp.empty else 0
+            # Filtrar respostas
+            resp_pt = [r for r in st.session_state.base_dados["respostas"] if r["obra_ref"] == ref]
+            conf = sum(1 for r in resp_pt if r["estado"] == "Conforme")
+            n_conf = sum(1 for r in resp_pt if r["estado"] == "Não Conforme")
+            na_it = sum(1 for r in resp_pt if r["estado"] == "N/A")
             
-            total_itens = 26
-            prog = int(((conf + n_conf + na_it) / total_itens) * 100) if not df_pt_resp.empty else 0
+            prog = int(((conf + n_conf + na_it) / 26) * 100) if resp_pt else 0
             
             with st.container(border=True):
                 c1, c2, c3, c4 = st.columns([3, 1.5, 2, 1])
@@ -149,12 +159,12 @@ else:
     st.title(f"⚡ Inspecionando: {ref_atual}")
     st.markdown("---")
     
-    df_filtrado = df_respostas[df_respostas["obra_ref"] == ref_atual].copy()
+    resp_pt = [r for r in st.session_state.base_dados["respostas"] if r["obra_ref"] == ref_atual]
     
-    conf = len(df_filtrado[df_filtrado["estado"] == "Conforme"])
-    n_conf = len(df_filtrado[df_filtrado["estado"] == "Não Conforme"])
-    na_it = len(df_filtrado[df_filtrado["estado"] == "N/A"])
-    prog = int(((conf + n_conf + na_it) / 26) * 100)
+    conf = sum(1 for r in resp_pt if r["estado"] == "Conforme")
+    n_conf = sum(1 for r in resp_pt if r["estado"] == "Não Conforme")
+    na_it = sum(1 for r in resp_pt if r["estado"] == "N/A")
+    prog = int(((conf + n_conf + na_it) / 26) * 100) if resp_pt else 0
     
     m1, m2, m3 = st.columns(3)
     m1.metric("Progresso do PT", f"{prog}%")
@@ -178,12 +188,10 @@ else:
             for item in itens:
                 i_id = str(item["id"])
                 
-                row_idx = df_respostas[(df_respostas["obra_ref"] == ref_atual) & (df_respostas["item_id"] == i_id)].index
+                # Encontrar registo correspondente
+                dados_linha = next((r for r in st.session_state.base_dados["respostas"] if r["obra_ref"] == ref_atual and r["item_id"] == i_id), None)
                 
-                if len(row_idx) > 0:
-                    idx = row_idx[0]
-                    dados_linha = df_respostas.loc[idx]
-                    
+                if dados_linha:
                     c_id, c_txt, c_est, c_dt, c_obs = st.columns([0.6, 5, 2, 1.8, 4])
                     
                     c_id.info(f"**{i_id}**")
@@ -199,14 +207,14 @@ else:
                         v_dt_padrao = datetime.now().date()
                     v_dt = c_dt.date_input(f"Dt_{i_id}", value=v_dt_padrao, label_visibility="collapsed")
                     
-                    v_obs = c_obs.text_input(f"Obs_{i_id}", value=str(dados_linha["observacoes"]) if pd.notna(dados_linha["observacoes"]) else "", placeholder="Notas...", label_visibility="collapsed")
+                    v_obs = c_obs.text_input(f"Obs_{i_id}", value=str(dados_linha["observacoes"]), placeholder="Notas...", label_visibility="collapsed")
                     
-                    if v_est != dados_linha["estado"] or str(v_dt) != str(dados_linha["data_verificacao"]) or v_obs != str(dados_linha["observacoes"]):
-                        df_respostas.loc[idx, "estado"] = v_est
-                        df_respostas.loc[idx, "data_verificacao"] = str(v_dt)
-                        df_respostas.loc[idx, "observacoes"] = v_obs
+                    if v_est != dados_linha["estado"] or str(v_dt) != str(dados_linha["data_verificacao"]) or v_obs != dados_linha["observacoes"]:
+                        dados_linha["estado"] = v_est
+                        dados_linha["data_verificacao"] = str(v_dt)
+                        dados_linha["observacoes"] = v_obs
                         modificado = True
 
     if modificado:
-        conn.update(worksheet="Respostas", data=df_respostas)
+        guardar_dados(st.session_state.base_dados)
         st.rerun()
