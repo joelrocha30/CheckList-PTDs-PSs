@@ -13,26 +13,26 @@ st.set_page_config(
 # Configuração da Checklist Estrutura (Sempre que alterar aqui, atualiza para todos)
 CHECKLIST_ESTRUTURA = {
     "1. Construção Civil e Infraestrutura": [
-        {"id": "01", "texto": "Acesso direto e desimpedido a partir da via pública para equipamentos pesados."},
-        {"id": "02", "texto": "Portas blindadas com abertura para o exterior e fechadura antipânico operacional."},
+        {"id": "01", "texto": "Acesso direto e desimpedido a partir da via pública."},
+        {"id": "02", "texto": "Portas com abertura para o exterior desimpedidas com fechadura operacional (Canhão Chave2)."},
         {"id": "03", "texto": "Grelhas de ventilação limpas, com rede mosquiteira/antideflagrante e IP regulamentar."},
-        {"id": "04", "texto": "Bacia de retenção de óleo do transformador 100% estanque e limpa."},
+        {"id": "04", "texto": "Sinalização exterior de segurança (placas de aviso 'Alta Tensão' e Chapa do PT na Porta)"},
         {"id": "05", "texto": "Tubos de passagem de cabos (cuba/cave) devidamente selados contra água e roedores."},
-        {"id": "06", "texto": "Sinalização exterior de segurança presente (placas de aviso 'Alta Tensão' e ID do PT)."}
+        {"id": "06", "texto": "Plataforma de Manobras (AI/AS)"},
     ],
     "2. Rede de Terras": [
-        {"id": "07", "texto": "Separação ou interligação regulamentar das terras de Proteção (Pe) e Serviço (Ru)."},
-        {"id": "08", "texto": "Relatório de ensaios valida resistência de terra conforme projeto (R < 1 Ohm)."},
-        {"id": "09", "texto": "Todas as massas metálicas (portas, quadros, calhas) ligadas à terra com ligadores amovíveis."}
+        {"id": "07", "texto": "Separação regulamentar das terras de Proteção e Terras de Serviço e identificação das mesmas"},
+        {"id": "08", "texto": "Mapa de Terras e croqui Simples da resistências de terras (<20 Ohm)"},
+        {"id": "09", "texto": "Todas as massas metálicas (portas, quadros, calhas, ferragens da Tubagem e Terras de Apoio/Poste) ligadas à terra com ligadores amovíveis."}
     ],
     "3. Equipamento de Média Tensão (MT)": [
-        {"id": "10", "texto": "Manómetro de gás SF6 das celas modulares/monobloco no nível correto (zona verde)."},
+        {"id": "10", "texto": "Terminações/terminais de cabos de MT limpos, alinhados e sem vincos estruturais."},
         {"id": "11", "texto": "Encravamentos mecânicos das chaves de terra testados e 100% operacionais."},
-        {"id": "12", "texto": "Terminações/terminais de cabos de MT limpos, alinhados e sem vincos estruturais."},
-        {"id": "13", "texto": "Esquema mimético frontal reflete perfeitamente a instalação física real."}
+        {"id": "12", "texto": "Instalação de BRA com a Identificação correcta (Nº da Cela + Nº Orgão)"},
+        {"id": "12", "texto": "Instalação da alavanca para o Secc/IntSecc (AS/AI)"},
     ],
     "4. Transformador de Potência": [
-        {"id": "14", "texto": "Placa de características (kVA, tensões nominal/secundária, grupo) coincide com projeto aprovado."},
+        {"id": "14", "texto": "Placa de características (kVA, tensões nominal/secundária, grupo) coincide com projeto adddddddddddprovado."},
         {"id": "15", "texto": "Aperto mecânico dos bornes (MT e BT) verificado criteriosamente com chave dinamométrica."},
         {"id": "16", "texto": "Comutador de tomadas em vazio posicionado na tomada correta para o arranque de exploração."},
         {"id": "17", "texto": "Acessórios instalados corretamente (termómetro, amortecedores de vibração, relé Buchholz)."}
@@ -41,14 +41,13 @@ CHECKLIST_ESTRUTURA = {
         {"id": "18", "texto": "Barramentos de cobre perfeitamente alinhados e com aperto verificado."},
         {"id": "19", "texto": "Fusíveis de proteção instalados com o tamanho e calibre adequados à potência do transformador."},
         {"id": "20", "texto": "Circuitos de serviços auxiliares (iluminação interna, tomadas, comando) operacionais."},
-        {"id": "21", "texto": "Relés de proteção diferencial e bobines de disparo testados com sucesso."}
+        {"id": "21", "texto": "DTC, Totalizador, Quadros de Comando, Contagem, Controlo e Comunicações (P4C ou Q4C)"}
     ],
     "6. Documentação e Equipamentos de Segurança": [
-        {"id": "22", "texto": "Kit de segurança regulamentar completo em obra (banqueta/tapete isolante, vara de manobra)."},
-        {"id": "23", "texto": "Luvas dielétricas guardadas em caixa própria e dentro do prazo de validade estipulado."},
-        {"id": "24", "texto": "Cartaz oficial de primeiros socorros in loco em caso de acidente elétrico e frasco de colírio."},
-        {"id": "25", "texto": "Extintor de CO2 carregado, com manómetro conforme e dentro da validade de inspeção."},
-        {"id": "26", "texto": "Telas finais, relatórios de ensaios dielétricos de cabos e certificados disponíveis."}
+        {"id": "22", "texto": "Kit de segurança regulamentar completo em obra (tapete isolante, alavanca de manobra pregada na parede, lanterna, aloquetes, Luvas)."},
+        {"id": "24", "texto": "Cartaz de primeiros socorros em caso de acidente elétrico."},
+        {"id": "25", "texto": "Pavimento envolvente do PTD e/ou Muros."},
+        {"id": "26", "texto": "Relatórios de ensaios aos cabos e certificados de conformidade"}
     ]
 }
 
